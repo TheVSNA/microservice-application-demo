@@ -2,11 +2,13 @@ package com.test.orderservice.orderservice.service;
 
 import com.test.orderservice.orderservice.dto.OrderLineItemsDto;
 import com.test.orderservice.orderservice.dto.OrderRequest;
+import com.test.orderservice.orderservice.event.OrderPlacedEvent;
 import com.test.orderservice.orderservice.model.Order;
 import com.test.orderservice.orderservice.model.OrderLineItems;
 import com.test.orderservice.orderservice.repository.OrderLineItemsRepository;
 import com.test.orderservice.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -21,6 +23,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderLineItemsRepository orderLineItemsRepository;
     private final WebClient.Builder webClientBuilder;
+    //private final KafkaTemplate<String,OrderPlacedEvent> kafkaTemplate;
+    private final KafkaTemplate<String,String> kafkaTemplate;
     public String placeOrder(OrderRequest or){
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
@@ -50,6 +54,8 @@ public class OrderService {
             }
             order.setOrderLineItemsList(savedlist);
             orderRepository.save(order);
+            //kafkaTemplate.send("notificationTopic",new OrderPlacedEvent(order.getOrderNumber()));
+            kafkaTemplate.send("notificationTopic",order.getOrderNumber());
             return "Order placed successfully";
         }else{
             return "One of the items is out of stock";
